@@ -1,16 +1,24 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-with open("body_pro_interpolaci.txt","r") as body:
-    x=[]
-    y=[]
-    for line in body:
-        bod=line.split()
-        x.append(float(bod[0]))
-        y.append(float(bod[1]))
+while True: #ošetření případů, kdy uživatel zadá špatný název souboru nebo je soubor ve špatné formě
+    try:
+        nazev_souboru=input("Zadejte název souboru, ze kterého program načte data:")
+        with open(nazev_souboru,"r") as body:
+            x=[] #seznam x-ových souřadnic
+            y=[] #seznam y-ových souřadnic
+            for line in body:
+                bod=line.split()
+                x.append(float(bod[0]))
+                y.append(float(bod[1]))
+        break
+    except FileNotFoundError:
+        print("Soubor nenalezen")
+    except ValueError:
+        print("Špatný formát souboru")
 
 """seřazení bodů pole velikosti x-ových souřadnic"""
-def quicksort(x,z=None):
+def quicksort(x,z=None): #x je seznam který chceme seřadit, z je podseznam indexů, na který je rekurzivně volána tato funkce
     if z==None:
         z=[i for i in range(len(x))]
     n=len(z)
@@ -24,21 +32,21 @@ def quicksort(x,z=None):
             a.append(z[i])
         if x[z[i]]>x[z[k]]:
             b.append(z[i])
-    return quicksort(x,a) + [z[k]] + quicksort(x,b)
+    return quicksort(x,a) + [z[k]] + quicksort(x,b) #funkce vrací seznam indexů prvků původního seznamu podle velikosti
 
 s=quicksort(x)
 x=[x[i] for i in s]
-y=[y[i] for i in s]
+y=[y[i] for i in s] #uspořádání vstupních dat
 
 """binární vyhledávání, bude se hodit pro výpočet chyby u některých metod"""
-def binary_search(x,t,začátek,konec):
+def binary_search(x,t,začátek,konec): #x je seznam, ve kterém hledáme, t je číslo, které hledáme
     k=(konec+začátek)//2
     if t>=x[k] and t<=x[k+1]:
         return k
     elif t<x[k]:
         return binary_search(x,t,začátek,k)
     else:
-        return binary_search(x,t,k,konec)
+        return binary_search(x,t,k,konec) #funkce vrátí index prvku t, který je nejbližší nižší
 
 w=[]
 
@@ -97,7 +105,7 @@ def gaussova_eliminace(m): #Bude se hodit pro interpolaci polynomen a kubickými
         p.append(k)
         for j in range(n):
             m[j][-1]=m[j][-1]-k*m[j][i]
-    return p
+    return p #vrátí řešení v opačném pořadí
 
 def lagrange(x,y):
     """Metoda interpolace polynomem pomocí n pomocných polynomů p(i), které jsou sestaveny tak, aby jejich hodnota v bodě i
@@ -163,7 +171,7 @@ def newton(x,y):
     """třetí metoda interpolace polynomem, koeficienty získám pomocí poměrných diferencí"""
     n=len(x)
     from collections import deque
-    f=deque([])
+    f=deque([]) #využívám frontu
     for i in range(n):
         f.append(y[i])
     s=[y[0]] #koeficienty polynomu
@@ -180,7 +188,7 @@ def newton(x,y):
         for i in range(n):
             b=s[i]
             for j in range(i):
-                b=b*(t-x[j])
+                b=b*(t-x[j]) #Hornerovo schéma
             c=c+b
         return c
     a=np.linspace(x[0],x[-1],100)
@@ -204,11 +212,11 @@ def newton_2(x,y,w=None,x1=None,y1=None):
     for i in range(1,n):
         for j in range(i,n):
             m[j][i]=(m[j][i-1]-m[j-1][i-1])/(x[j]-x[j-i])
-    def newtonuv_polynom(m,t):
+    def newtonuv_polynom(m,t): #m je tabulka poměrných diferencí, koeficienty polynomu jsou na diagonále, t je interpolační bod
         c=m[-1][-1]
         for i in range(n-1,-1,-1):
             c=c*(t-x[i])
-            c=c+m[i][i]
+            c=c+m[i][i] #Hornerovo schéma
         return c
     def chyba(x1,y1):
         l=len(x1)
@@ -242,7 +250,7 @@ def dalsi_bod(m,x,y,x2,y2):
     """rozšíření tabulky"""
     m.append([0]*(n+1))
     m[-1][0]=y2
-    if x2!=None:
+    if x2!=None: #Pokud x==None, znamená to, že už všechny body byly přidány
         for i in range(1,n+1):
             m[-1][i]=(m[-1][i-1]-m[-2][i-1])/(x2-x[-i-1])
     def newtonuv_polynom(m,t):
@@ -382,7 +390,7 @@ def cubic_spline(x,y,w=None,x1=None,y2=None):
 """Primitivní metoda interpolace, každému bodu přiřadí funkční hodnotu nejbližšího zadaného bodu"""
 def nearest_neighbour(x,y,w=None,x1=None,y2=None):
     n=len(x)
-    s=[]
+    s=[] #seznam "hraničních" hodnot
     for i in range(n-1):
         s.append((x[i]+x[i+1])/2)
     if w==None:
@@ -498,21 +506,31 @@ elif typ_interpolace=="polynomiální":
     elif preklep_2(metoda,s)=="newton 2":
         m=newton_2(x,y)
         dalsibody=input("Přejete si přidat další body? (ano, ne)")
+        while dalsibody!="ne" and dalsibody!="ano":
+            dalsibody=input("Odpověď nerozpoznána. Přejete si přidat další body?(ano,ne):")
         if dalsibody == "ne":
             pass
         else:
-            with open("dalsi_body.txt","r") as db:
-                x2=[]
-                y2=[]
-                for line in db:
-                    bod=line.split()
-                    x2.append(float(bod[0]))
-                    y2.append(float(bod[1]))
-                x2.append(None)
-                y2.append(None)
-            n=len(x2)
-            for i in range(n):
-                m=dalsi_bod(m,x,y,x2[i],y2[i])
+            while True:
+                try:
+                    nazev_souboru=input("Zadejte název souboru:")
+                    with open(nazev_souboru,"r") as db:
+                        x2=[]
+                        y2=[]
+                        for line in db:                       
+                            bod=line.split()
+                            x2.append(float(bod[0]))
+                            y2.append(float(bod[1]))
+                        x2.append(None)
+                        y2.append(None)
+                        n=len(x2)
+                        for i in range(n):
+                            m=dalsi_bod(m,x,y,x2[i],y2[i])
+                    break
+                except FileNotFoundError:
+                    print("Soubor nenalezen")
+                except ValueError:
+                    print("Špatný formát souboru")
     else:
         barycentricka_interpolace(x,y)
 elif typ_interpolace=="kvadratické splajny":
@@ -522,20 +540,27 @@ elif typ_interpolace=="kubické splajny":
 elif typ_interpolace=="metoda nejbližšího souseda":
     nearest_neighbour(x,y)
 else:
-    with open("kontrola_chyby.txt","r") as kon:
-        x1=[]
-        y1=[]
-        for line in kon:
-            bod=line.split()
-            x1.append(float(bod[0]))
-            y1.append(float(bod[1]))
+    while True:
+        try:
+            nazev_souboru=input("Zadejte název souboru:")
+            with open(nazev_souboru,"r") as kon:
+                x1=[]
+                y1=[]
+                for line in kon:
+                    bod=line.split()
+                    x1.append(float(bod[0]))
+                    y1.append(float(bod[1]))
+            break
+        except FileNotFoundError:
+            print("Soubor nenalezen")
+        except ValueError:
+            print("Špatný formát souboru")
     linear(x,y,w,x1,y1)
     lagrange_2(x,y,w,x1,y1)
     newton_2(x,y,w,x1,y1)
     quadratic_spline(x,y,w,x1,y1)
     cubic_spline(x,y,w,x1,y1)
     nearest_neighbour(x,y,w,x1,y1)
-    print(w)
     k=0
     for i in range(1,4):
         if w[i]<w[k]:
